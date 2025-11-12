@@ -1,0 +1,5 @@
+main.c:390:5:__io_putchar	1
+main.c:615:6:Error_Handler	1
+main.c:402:5:main	13
+main.c:626:6:HAL_GPIO_EXTI_Callback	2
+main.c:636:6:SPI3_IRQHandler	1

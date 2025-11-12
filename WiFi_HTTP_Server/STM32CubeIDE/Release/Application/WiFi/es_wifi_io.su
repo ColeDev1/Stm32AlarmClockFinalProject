@@ -1,0 +1,12 @@
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:447:6:SPI_WIFI_DelayUs	32	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:310:5:wait_spi_tx_event.isra	16	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:73:6:SPI_WIFI_MspInit	64	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:202:8:SPI_WIFI_ResetModule	32	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:145:8:SPI_WIFI_Init	24	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:238:8:SPI_WIFI_DeInit	8	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:329:9:SPI_WIFI_ReceiveData	40	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:388:9:SPI_WIFI_SendData	40	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:437:6:SPI_WIFI_Delay	0	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:479:6:HAL_SPI_RxCpltCallback	0	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:494:6:HAL_SPI_TxCpltCallback	0	static
+/home/jojo/STM32Cube/Repository/STM32Cube_FW_L4_V1.17.0/Projects/B-L4S5I-IOT01A/Applications/WiFi/Common/Src/es_wifi_io.c:509:9:SPI_WIFI_ISR	0	static
