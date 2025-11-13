@@ -15,7 +15,7 @@
 /* Configuration */
 #define WIFI_SSID     "SSID"
 #define WIFI_PASSWORD "PASSWORD"
-#define WIFI_SECURITY WIFI_ECN_WPA2_PSKf
+#define WIFI_SECURITY WIFI_ECN_WPA2_PSK
 
 /* Private variables ---------------------------------------------------------*/
 extern UART_HandleTypeDef hDiscoUart;
@@ -129,96 +129,73 @@ static int wifi_connect(void)
   return -1;
 }
 
-/**
-  * @brief  WORKING HTTP GET implementation
-  */
-/**
-  * @brief  HTTP GET to local Python server
-  */
-static int http_get_working(void)
+#include "wifi.h"
+#include <stdio.h>
+#include <string.h>
+
+#define SOCKET 0
+
+int http_get_working()
 {
-  uint16_t sent_len = 0, recv_len = 0;
-  WIFI_Status_t status;
+    WIFI_Status_t status;
+    uint8_t server_ip[4] = {185, 93, 1, 249};
+    char http_request[512];
+    uint8_t recv_buffer[1024];
+    uint16_t recv_len = 0;
 
-  uint8_t server_ip[4] = {34, 236, 82, 201}; // Your PC's IP on local network
+    printf("=== HTTP GET (WeatherAPI) ===\r\n");
+    printf("Server: api.weatherapi.com (185.93.1.249:80)\r\n");
 
-  printf("\n=== HTTP GET ===\r\n");
-  printf("Server: %d.%d.%d.%d:80\r\n", server_ip[0], server_ip[1], server_ip[2], server_ip[3]);
+    // 1. Open TCP connection
+    status = WIFI_OpenClientConnection(SOCKET, WIFI_TCP_PROTOCOL,
+                                       "WeatherAPI", server_ip, 80, 0);
+    if (status != WIFI_STATUS_OK) {
+        printf("ERROR: Open connection failed: %d\r\n", status);
+        return -1;
+    }
+    printf("[1] Connection opened\r\n");
 
-  /* Step 1: Open connection */
-  printf("[1] Opening connection...\r\n");
-  status = WIFI_OpenClientConnection(SOCKET, WIFI_TCP_PROTOCOL, "HTTP_Client", server_ip, 80, 0);  // Port 80
-  if (status != WIFI_STATUS_OK) {
-    printf("ERROR: Open connection failed: %d\r\n", status);
-    return -1;
-  }
-  printf("[1] Connection opened\r\n");
+    // 2. Build and send HTTP request
+    sprintf(http_request,
+            "GET /v1/current.json?key=%s&q=%s&aqi=no HTTP/1.1\r\n"
+            "Host: api.weatherapi.com\r\n"
+            "User-Agent: STM32-WiFi\r\n"
+            "Accept: */*\r\n"
+            "Connection: close\r\n\r\n",
+			"65e43dc2e6944954b35162401251311", "Montreal");
 
-  HAL_Delay(1000); // Small delay before sending
+    printf("[2] Sending request...\r\n");
+    status = WIFI_SendData(SOCKET, (uint8_t *)http_request, strlen(http_request), &recv_len, 10000);
+    if (status != WIFI_STATUS_OK) {
+        printf("ERROR: Send failed: %d\r\n", status);
+        WIFI_CloseClientConnection(SOCKET);
+        return -2;
+    }
+    printf("[2] Sent %u bytes\r\n", (unsigned)recv_len);
 
-  /* Step 2: Build and send HTTP request */
-  printf("[2] Sending request...\r\n");
-  sprintf((char *)http_request,
-          "GET /get HTTP/1.1\r\n"
-          "Host: %d.%d.%d.%d:80\r\n"
-          "User-Agent: STM32-WiFi\r\n"
-          "Connection: close\r\n"
-          "\r\n",
-          server_ip[0], server_ip[1], server_ip[2], server_ip[3]);
+    // 3. Receive response
+    printf("[3] Waiting for response...\r\n");
+    memset(recv_buffer, 0, sizeof(recv_buffer));
 
-  status = WIFI_SendData(SOCKET, http_request, strlen((char *)http_request),
-                         &sent_len, WIFI_WRITE_TIMEOUT);
-  if (status != WIFI_STATUS_OK || sent_len == 0) {
-    printf("ERROR: Send failed: %d, sent: %d\r\n", status, sent_len);
+    uint16_t read_len;
+
+    do {
+        read_len = sizeof(recv_buffer);
+        status = WIFI_ReceiveData(SOCKET, recv_buffer, sizeof(recv_buffer), &read_len, 2000);
+        if (status == WIFI_STATUS_OK && read_len > 0) {
+            printf("%.*s", read_len, recv_buffer);
+        } else {
+            HAL_Delay(50);
+        }
+    } while (status == WIFI_STATUS_OK);
+
+    // 4. Close connection
     WIFI_CloseClientConnection(SOCKET);
-    return -1;
-  }
-  printf("[2] Sent %d bytes\r\n", sent_len);
+    printf("\r\n[4] Connection closed\r\n");
 
-  /* Step 3: Wait for response */
-  printf("[3] Waiting for response...\r\n");
-  HAL_Delay(3000); // Give server time to respond
-
-  /* Step 4: Receive data */
-  printf("[4] Receiving data...\r\n");
-  memset(http_response, 0, sizeof(http_response));
-
-  status = WIFI_ReceiveData(SOCKET, http_response, sizeof(http_response) - 1,
-                           &recv_len, 10000); // 10 second timeout
-
-  printf("[4] Receive status: %d, received: %d bytes\r\n", status, recv_len);
-
-  if (status == WIFI_STATUS_OK && recv_len > 0) {
-    printf("\n=== HTTP RESPONSE ===\r\n");
-    // Print entire response
-    for(int i = 0; i < recv_len; i++) {
-      printf("%c", http_response[i]);
-    }
-    printf("\n=== END RESPONSE ===\r\n");
-  } else {
-    printf("ERROR: No data received\r\n");
-
-    // Debug: Try to receive with different buffer sizes
-    printf("Trying with smaller buffer...\r\n");
-    status = WIFI_ReceiveData(SOCKET, http_response, 512, &recv_len, 5000);
-    printf("Small buffer receive: status=%d, bytes=%d\r\n", status, recv_len);
-
-    if (recv_len > 0) {
-      printf("Data received with small buffer:\r\n");
-      for(int i = 0; i < recv_len; i++) {
-        printf("%c", http_response[i]);
-      }
-      printf("\r\n");
-    }
-  }
-
-  /* Step 5: Close connection */
-  printf("[5] Closing connection...\r\n");
-  WIFI_CloseClientConnection(SOCKET);
-  printf("[5] Connection closed\r\n");
-
-  return (recv_len > 0) ? 0 : -1;
+    return 0;
 }
+
 
 /**
   * @brief  System Clock Configuration
