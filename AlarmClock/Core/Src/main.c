@@ -125,15 +125,14 @@ static void MX_I2C1_Init(void);
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	//button isr
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 
 	//waiting for alarm (1) -> configure (0)
 	//snooze (2) -> configure (0)
 	if (state == waitingForAlarm || state == snooze) {
 		state = config;
 		stateChanged = 1;
-	}
-	//if in display mode go to snooze
-	if (state == display) {
+	}else if (state == display) {
 		state = snooze;
 		stateChanged = 1;
 		Audio_Stop();
@@ -268,9 +267,10 @@ int main(void)
 
 	char uartMsg[256];
 	const char *cityMsg = "[Enter Location]: ";
-	const char *timerMsg = "\r\n[Enter Timer (e.g. 14:30)]: ";
-	const char *durationMsg = "\r\n[Enter Timer Duration (in min)]: ";
-
+	const char *timerMsg = "\r\n[Enter Current Time (e.g. 14:30)]: ";
+	const char *durationMsg = "\r\n[Enter Alarm Time (e.g. 6:15)]: ";
+	const char * waiting = "\r\n\t[Waiting]";
+	const char * snoozing = "\r\n\t[Snoozing for 2 minutes]";
 	// Intro banner
 	const char *banner = "\r\n=== ALARM CLOCK CONFIG ===\r\n"
 			"You will be asked for:\r\n"
@@ -305,7 +305,7 @@ int main(void)
 
 						valid_input = parseTime((char*)timer_buffer,&currentHour,&currentMin);
 						if (valid_input == -1){
-							char * invalidInput = "\r\nTime format is Hour:Minute in 24hr time, Try Again";
+							char * invalidInput = "\r\nTime format is (Hour):(Minute) in 24hr time, Try Again";
 							HAL_UART_Transmit(&huart1, (uint8_t*) invalidInput, strlen(invalidInput), HAL_MAX_DELAY);
 						}else clock_state ++;
 					} else if (clock_state == 2) {
@@ -389,7 +389,12 @@ int main(void)
 			  }
 
 		} else if (state == waitingForAlarm) { //this is where the system is put into low power mode
+			if (HAL_GPIO_ReadPin(BUTTON_GPIO_Port, BUTTON_Pin) == GPIO_PIN_SET) {
+				state = snooze;
+				stateChanged = 1;
+			}
 			if (stateChanged) {
+				HAL_UART_Transmit(&huart1, (uint8_t*) waiting, strlen(waiting), HAL_MAX_DELAY);
 				alreadyDisplaying = 0;
 				alarmDurationCounter = 0;
 				HAL_TIM_Base_Stop_IT(&htim7);
@@ -401,6 +406,7 @@ int main(void)
 		} else if (state == snooze) {
 			//start the shorter timer to wait for the two minutes
 			if (stateChanged) {
+				HAL_UART_Transmit(&huart1, (uint8_t*) snoozing, strlen(snoozing), HAL_MAX_DELAY);
 				alreadyDisplaying = 0;
 				snoozeCounter = 0;
 				HAL_TIM_Base_Start_IT(&htim7); // Interrupt at 1hz
@@ -414,7 +420,7 @@ int main(void)
 				//display all the stuff through UART
 				int tempSensor = (int) BSP_TSENSOR_ReadTemp();
 				int humiditySensor = (int) BSP_HSENSOR_ReadHumidity();
-				HAL_RTC_GetTime(&hrtc,&currentTime,RTC_FORMAT_BCD);
+				HAL_RTC_GetTime(&hrtc,&currentTime,RTC_FORMAT_BIN);
 				char curTimeStr[6];
 				sprintf(curTimeStr, "%02d:%02d", currentTime.Hours, currentTime.Minutes);
 
@@ -917,11 +923,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
 
-  /*Configure GPIO pin : Button_Pin */
-  GPIO_InitStruct.Pin = Button_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : BUTTON_Pin */
+  GPIO_InitStruct.Pin = BUTTON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(BUTTON_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PE10 PE11 PE12 PE13
                            PE14 PE15 */
@@ -935,8 +944,9 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : LED_Pin */
   GPIO_InitStruct.Pin = LED_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/

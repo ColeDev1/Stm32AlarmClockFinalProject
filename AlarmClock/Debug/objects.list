@@ -25,7 +25,6 @@
 "./Core/Components/stmpe811/stmpe811.o"
 "./Core/Components/wm8994/wm8994.o"
 "./Core/Src/audio_player.o"
-"./Core/Src/gpio.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32l4s5i_iot01.o"
 "./Core/Src/stm32l4s5i_iot01_accelero.o"
